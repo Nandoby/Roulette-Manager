@@ -1,7 +1,8 @@
-import { createTheme } from "@mui/material/styles";
+import { createTheme, PaletteMode } from "@mui/material";
 
-const theme = createTheme({
+const getTheme = (mode: PaletteMode) => createTheme({
   palette: {
+    mode,
     primary: {
       main: "#1976d2",
     },
@@ -9,9 +10,19 @@ const theme = createTheme({
       main: "#dc004e",
     },
     background: {
-      default: "#f5f5f5",
+      default: mode === 'light' ? '#f5f5f5' : '#121212',
+      paper: mode === 'light' ? '#fff' : '#1e1e1e',
     },
   },
+  components: {
+    MuiPaper: {
+      styleOverrides: {
+        root: {
+          transition: 'background-color 0.3s ease',
+        }
+      }
+    }
+  }
 });
 
-export default theme;
+export default getTheme;
