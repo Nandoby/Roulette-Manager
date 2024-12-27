@@ -23,25 +23,48 @@ export default function SessionStats({ sessions, title }: SessionStatsProps) {
       (s) => s.currentBalance > s.initialCapital
     ).length;
 
-    const totalProfit = sessions.reduce(
-      (sum, s) => sum + (s.currentBalance - s.initialCapital),
-      0
-    );
-
-    const chartData = sessions.map((s) => ({
-      date: new Date(s.startTime).toLocaleDateString(),
-      profit: s.currentBalance - s.initialCapital,
-      balance: s.currentBalance,
-    }));
+    // Calculer le prix cumulatif
+    let cumulativeProfit = 0;
+    const chartData = sessions.map((s) => {
+      const sessionProfit = s.currentBalance - s.initialCapital;
+      cumulativeProfit += sessionProfit;
+      return {
+        date: new Date(s.startTime).toLocaleDateString(),
+        profit: cumulativeProfit,
+        sessionProfit,
+        balance: s.currentBalance,
+      };
+    });
 
     return {
       totalSessions,
       winSessions,
       winRate: totalSessions ? (winSessions / totalSessions) * 100 : 0,
-      totalProfit,
+      totalProfit: cumulativeProfit,
       chartData,
     };
   }, [sessions]);
+
+  const CustomTooltip = ({ active, payload }: any) => {
+    if (active && payload && payload.length > 0) {
+      return (
+        <Paper sx={{ p: 1 }}>
+          <Typography variant="body2">{payload[0].payload.date}</Typography>
+          <Typography variant="body2" color="text.secondary">
+            Profit/Perte session : {payload[0].payload.sessionProfit.toFixed(2)}{" "}
+            €
+          </Typography>
+          <Typography variant="body2" color="text.secondary">
+            Profit/Perte cumulé : {payload[0].payload.profit.toFixed(2)} €
+          </Typography>
+          <Typography variant="body2" color="text.secondary">
+            Solde : {payload[0].payload.balance.toFixed(2)} €
+          </Typography>
+        </Paper>
+      );
+    }
+    return null;
+  };
 
   return (
     <Paper elevation={3} sx={{ p: 3, mb: 3 }}>
@@ -88,12 +111,12 @@ export default function SessionStats({ sessions, title }: SessionStatsProps) {
               <CartesianGrid strokeDasharray="3 3" />
               <XAxis dataKey="date" />
               <YAxis />
-              <Tooltip />
+              <Tooltip content={<CustomTooltip />}/>
               <Line
                 type="monotone"
                 dataKey="profit"
                 stroke="#8884d8"
-                name="Profit/Perte"
+                name="Profit/Perte cumulé"
               />
               <Line
                 type="monotone"

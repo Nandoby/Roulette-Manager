@@ -5,9 +5,8 @@ export interface SessionConfig {
 }
 
 export interface Bet {
-  id: string;
   amount: number;
-  result: number; // Montant gagné (positif) ou perdu (négatif)
+  isWin: boolean;
   timestamp: Date;
 }
 

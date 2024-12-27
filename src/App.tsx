@@ -4,6 +4,7 @@ import Layout from "./components/Layout";
 import HomePage from "./pages/HomePage";
 import SessionPage from "./pages/SessionPage";
 import StatsPage from "./pages/StatsPage";
+import BankrollPage from "./pages/BankrollPage";
 
 function App() {
   return (
@@ -13,6 +14,7 @@ function App() {
           <Route path="/" element={<HomePage />} />
           <Route path="/session" element={<SessionPage />} />
           <Route path="/stats" element={<StatsPage />} />
+          <Route path="/bankroll" element={<BankrollPage />} />
         </Routes>
       </Container>
     </Layout>

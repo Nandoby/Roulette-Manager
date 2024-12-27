@@ -1,94 +1,101 @@
-import { useState } from "react";
+import { useState } from 'react';
 import {
-  Paper,
-  TextField,
-  Button,
   Box,
+  Button,
+  TextField,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem,
+  SelectChangeEvent,
   Typography,
-  ToggleButton,
-  ToggleButtonGroup,
-  Alert,
-} from "@mui/material";
-import { Bet } from "@/types/session";
+} from '@mui/material';
+import { Bet } from '../types/session';
+import { useKeyboardShortcuts, GLOBAL_SHORTCUTS } from '../hooks/useKeyboardShortcuts';
 
 interface BetFormProps {
   onAddBet: (bet: Bet) => void;
-  disabled?: boolean;
+  disabled: boolean;
 }
 
-export default function BetForm({ onAddBet, disabled = false }: BetFormProps) {
-  const [amount, setAmount] = useState<string>("");
-  const [result, setResult] = useState<"win" | "loss">("win");
-  const [error, setError] = useState<string>("");
+export default function BetForm({ onAddBet, disabled }: BetFormProps) {
+  const [amount, setAmount] = useState<string>('');
+  const [result, setResult] = useState<'win' | 'loss'>('win');
 
-  const handleSubmit = (event: React.FormEvent) => {
-    event.preventDefault();
+  const handleSubmit = (isWin: boolean) => {
+    if (!amount || disabled) return;
 
-    const betAmount = parseFloat(amount);
-
-    if (isNaN(betAmount) || betAmount <= 0) {
-      setError("Le montant doit être un nombre positif");
-      return;
-    }
-
-    const newBet: Bet = {
-      id: Date.now().toString(),
-      amount: betAmount,
-      result: result === "win" ? betAmount : -betAmount,
+    const bet: Bet = {
+      amount: parseFloat(amount),
       timestamp: new Date(),
+      isWin,
     };
 
-    onAddBet(newBet);
-    setAmount("");
-    setError("");
+    onAddBet(bet);
+    setAmount('');
+    setResult('win');
   };
 
+  // Filtrer les raccourcis pertinents pour les paris
+  const betShortcuts = GLOBAL_SHORTCUTS.filter(
+    shortcut => ['Enregistrer un gain', 'Enregistrer une perte'].includes(shortcut.description)
+  ).map(shortcut => ({
+    ...shortcut,
+    action: () => {
+      if (disabled || !amount) return;
+      handleSubmit(shortcut.description === 'Enregistrer un gain');
+    }
+  }));
+
+  useKeyboardShortcuts(betShortcuts);
+
   return (
-    <Paper elevation={3} sx={{ p: 3, mb: 3 }}>
-      <Typography variant="h6" gutterBottom>
-        Enregistrer une mise
+    <Box
+      component="form"
+      sx={{
+        display: 'flex',
+        flexDirection: 'column',
+        gap: 2,
+        maxWidth: 400,
+        margin: '0 auto',
+      }}
+    >
+      <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+        Raccourcis : Ctrl+G (Gain) | Ctrl+P (Perte)
       </Typography>
+      
+      <TextField
+        label="Montant"
+        type="number"
+        value={amount}
+        onChange={(e) => setAmount(e.target.value)}
+        disabled={disabled}
+        fullWidth
+        InputProps={{
+          inputProps: { min: 0, step: 0.5 }
+        }}
+      />
 
-      <form onSubmit={handleSubmit}>
-        <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
-          <TextField
-            label="Montant (€)"
-            type="number"
-            value={amount}
-            onChange={(e) => setAmount(e.target.value)}
-            disabled={disabled}
-            required
-            fullWidth
-            inputProps={{ min: 0, step: "0.01" }}
-          />
-
-          <ToggleButtonGroup
-            value={result}
-            exclusive
-            onChange={(_, newValue) => newValue && setResult(newValue)}
-            disabled={disabled}
-            fullWidth
-          >
-            <ToggleButton value="win" color="success">
-              Gagné
-            </ToggleButton>
-            <ToggleButton value="loss" color="error">
-              Perdu
-            </ToggleButton>
-          </ToggleButtonGroup>
-
-          {error && <Alert severity="error">{error}</Alert>}
-
-          <Button
-            type="submit"
-            variant="contained"
-            disabled={disabled}
-            fullWidth
-          >
-            Enregistrer la mise
-          </Button>
-        </Box>
-      </form>
-    </Paper>
+      <Box sx={{ display: 'flex', gap: 2 }}>
+        <Button
+          variant="contained"
+          color="success"
+          onClick={() => handleSubmit(true)}
+          disabled={!amount || disabled}
+          fullWidth
+        >
+          Gain
+        </Button>
+        <Button
+          variant="contained"
+          color="error"
+          onClick={() => handleSubmit(false)}
+          disabled={!amount || disabled}
+          fullWidth
+        >
+          Perte
+        </Button>
+      </Box>
+    </Box>
   );
 }

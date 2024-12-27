@@ -1,105 +1,104 @@
-import { useState } from 'react';
-import { Container, Box, Button } from '@mui/material';
-import SessionConfigForm from '../components/SessionConfig';
-import SessionStatus from '../components/SessionStatus';
-import BetForm from '../components/BetForm';
-import BetHistory from '../components/BetHistory';
-import { SessionConfig, SessionState, Bet } from '../types/session';
-import { saveSession } from "@/services/sessionStorage"
+import { useState, useEffect } from "react";
+import { Container, Box, Button } from "@mui/material";
+import SessionConfigForm from "../components/SessionConfigForm";
+import SessionStatus from "../components/SessionStatus";
+import BetForm from "../components/BetForm";
+import BetHistory from "../components/BetHistory";
+import { SessionState, SessionConfig, Bet } from "../types/session";
+import { recordSessionResult } from "@/services/bankrollService";
+import { saveSession } from "@/services/sessionStorage";
 
 export default function SessionPage() {
   const [session, setSession] = useState<SessionState | null>(null);
 
   const handleStartSession = (config: SessionConfig) => {
-    const newSession: SessionState = {
+    setSession({
       ...config,
       currentBalance: config.initialCapital,
       isActive: true,
       startTime: new Date(),
       bets: [],
-    };
-    setSession(newSession);
+    });
+  };
+
+  const handleEndSession = () => {
+    if (session) {
+      const finalSession = {
+        ...session,
+        isActive: false,
+        endTime: new Date(),
+      };
+
+      // Calculer le profit/perte de la session
+      const profit = finalSession.currentBalance - finalSession.initialCapital;
+
+      // Mettre à jour le bankroll
+      recordSessionResult(
+        profit,
+        `Session du ${new Date().toLocaleDateString()}`
+      );
+
+      // Sauvegarder la session dans l'historique
+      saveSession(finalSession);
+
+      setSession(finalSession);
+    }
   };
 
   const handleAddBet = (bet: Bet) => {
     if (!session) return;
 
-    const newBalance = session.currentBalance + bet.result;
-    const hasReachedStopLoss = newBalance <= (session.initialCapital - session.stopLoss);
-    const hasReachedStopWin = (newBalance - session.initialCapital) >= session.stopWin;
+    const newBalance =
+      session.currentBalance + (bet.isWin ? bet.amount : -bet.amount);
+    const newSession = {
+      ...session,
+      currentBalance: newBalance,
+      bets: [...session.bets, bet],
+    };
 
-    setSession((prev) => {
-      if (!prev) return null;
-      
-      const updatedSession = {
-        ...prev,
-        currentBalance: newBalance,
-        bets: [bet, ...prev.bets],
-        isActive: !hasReachedStopLoss && !hasReachedStopWin,
-        ...(hasReachedStopLoss || hasReachedStopWin ? { endTime: new Date() } : {}),
-      };
+    // Vérifier si on atteint le stop loss ou le stop win
+    const profitLoss = newBalance - session.initialCapital;
+    if (profitLoss <= -session.stopLoss || profitLoss >= session.stopWin) {
+      newSession.isActive = false;
+      newSession.endTime = new Date();
 
-      // Sauvegarder la session si elle est terminée
-      if (hasReachedStopLoss || hasReachedStopWin) {
-        saveSession(updatedSession);
-      }
+      // Mettre à jour le bankroll et sauvegarder la session si elle se termine
+      recordSessionResult(profitLoss, `Session du ${new Date().toLocaleDateString()}`);
+      saveSession(newSession);
+    }
 
-      return updatedSession;
-    });
-  };
-
-  const handleEndSession = () => {
-    if (!session) return;
-
-    setSession((prev) => {
-      if (!prev) return null;
-      const updatedSession = {
-        ...prev,
-        isActive: false,
-        endTime: new Date(),
-      };
-
-      // Sauvegarder la session terminée
-      saveSession(updatedSession);
-
-      return updatedSession;
-    });
+    setSession(newSession);
   };
 
   if (!session) {
     return (
-      <Container maxWidth="md">
-        <Box sx={{ py: 4 }}>
-          <SessionConfigForm onStart={handleStartSession} />
+      <Container>
+        <Box sx={{ mt: 4 }}>
+          <SessionConfigForm onSubmit={handleStartSession} />
         </Box>
       </Container>
     );
   }
 
   return (
-    <Container maxWidth="md">
-      <Box sx={{ py: 4 }}>
+    <Container>
+      <Box sx={{ mt: 4 }}>
         <SessionStatus session={session} />
-        
-        <BetForm
-          onAddBet={handleAddBet}
-          disabled={!session.isActive}
-        />
-
+        <BetForm onAddBet={handleAddBet} disabled={!session.isActive} />
+        <Box sx={{ mt: 3 }}>
+          <BetHistory bets={session.bets} />
+        </Box>
         {session.isActive && (
-          <Box sx={{ mb: 3 }}>
+          <Box sx={{ mt: 3, display: "flex", justifyContent: "center" }}>
             <Button
-              variant="outlined"
-              color="primary"
-              fullWidth
+              variant="contained"
+              color="secondary"
               onClick={handleEndSession}
             >
-              Terminer la session
+              Terminer la Session
             </Button>
           </Box>
         )}
-
-        <BetHistory bets={session.bets} />
       </Box>
     </Container>
   );
