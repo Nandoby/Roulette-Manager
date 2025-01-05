@@ -5,6 +5,7 @@ import HomePage from "./pages/HomePage";
 import SessionPage from "./pages/SessionPage";
 import StatsPage from "./pages/StatsPage";
 import BankrollPage from "./pages/BankrollPage";
+import AdminPage from "./pages/AdminPage";
 
 function App() {
   return (
@@ -15,6 +16,7 @@ function App() {
           <Route path="/session" element={<SessionPage />} />
           <Route path="/stats" element={<StatsPage />} />
           <Route path="/bankroll" element={<BankrollPage />} />
+          <Route path="/admin" element={<AdminPage />} />
         </Routes>
       </Container>
     </Layout>

@@ -7,6 +7,11 @@ import {
   Button,
   IconButton,
   useTheme,
+  Drawer,
+  List,
+  ListItem,
+  ListItemIcon,
+  ListItemText,
 } from "@mui/material";
 import { Link as RouterLink, useNavigate } from "react-router-dom";
 import Brightness4Icon from "@mui/icons-material/Brightness4";
@@ -19,6 +24,11 @@ import {
   GLOBAL_SHORTCUTS,
   useKeyboardShortcuts,
 } from "@/hooks/useKeyboardShortcuts";
+import MenuIcon from '@mui/icons-material/Menu';
+import HomeIcon from '@mui/icons-material/Home';
+import CasinoIcon from '@mui/icons-material/Casino';
+import ShowChartIcon from '@mui/icons-material/ShowChart';
+import AdminPanelSettingsIcon from '@mui/icons-material/AdminPanelSettings';
 
 interface LayoutProps {
   children: ReactNode;
@@ -28,6 +38,8 @@ function Layout({ children }: LayoutProps) {
   const { mode, toggleTheme } = useCustomTheme();
   const navigate = useNavigate();
   const [helpOpen, setHelpOpen] = useState(false);
+  const [isDrawerOpen, setIsDrawerOpen] = useState(false);
+  const theme = useTheme();
 
   const shortcuts = [
     ...GLOBAL_SHORTCUTS.map((shortcut) => ({
@@ -49,10 +61,31 @@ function Layout({ children }: LayoutProps) {
 
   useKeyboardShortcuts(shortcuts);
 
+  const menuItems = [
+    { text: 'Accueil', icon: <HomeIcon />, path: '/' },
+    { text: 'Session', icon: <CasinoIcon />, path: '/session' },
+    { text: 'Statistiques', icon: <ShowChartIcon />, path: '/stats' },
+    { text: 'Bankroll', icon: <AccountBalanceWalletIcon />, path: '/bankroll' },
+    { text: 'Administration', icon: <AdminPanelSettingsIcon />, path: '/admin' },
+  ];
+
+  const toggleDrawer = () => {
+    setIsDrawerOpen(!isDrawerOpen);
+  };
+
   return (
     <Box sx={{ display: "flex", flexDirection: "column", minHeight: "100vh" }}>
       <AppBar position="static">
         <Toolbar>
+          <IconButton
+            color="inherit"
+            aria-label="open drawer"
+            edge="start"
+            onClick={toggleDrawer}
+            sx={{ mr: 2 }}
+          >
+            <MenuIcon />
+          </IconButton>
           <Typography variant="h6" component="div" sx={{ flexGrow: 1 }}>
             Gestionnaire de Roulette
           </Typography>
@@ -85,6 +118,40 @@ function Layout({ children }: LayoutProps) {
           </IconButton>
         </Toolbar>
       </AppBar>
+
+      <Drawer
+        variant="temporary"
+        anchor="left"
+        open={isDrawerOpen}
+        onClose={toggleDrawer}
+        sx={{
+          width: 240,
+          flexShrink: 0,
+          '& .MuiDrawer-paper': {
+            width: 240,
+            boxSizing: 'border-box',
+          },
+        }}
+      >
+        <Toolbar />
+        <Box sx={{ overflow: 'auto' }}>
+          <List>
+            {menuItems.map((item) => (
+              <ListItem
+                button
+                key={item.text}
+                component={RouterLink}
+                to={item.path}
+                onClick={toggleDrawer}
+              >
+                <ListItemIcon>{item.icon}</ListItemIcon>
+                <ListItemText primary={item.text} />
+              </ListItem>
+            ))}
+          </List>
+        </Box>
+      </Drawer>
+
       <Box component="main" sx={{ flexGrow: 1, py: 3 }}>
         {children}
       </Box>
