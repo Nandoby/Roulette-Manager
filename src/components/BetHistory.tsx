@@ -24,7 +24,7 @@ export default function BetHistory({ bets }: BetHistoryProps) {
     );
   }
 
-  const formatTime = (timestamp: string) => {
+  const formatTime = (timestamp: Date | string) => {
     const date = new Date(timestamp);
     return date.toLocaleTimeString();
   };

@@ -1,10 +1,16 @@
-import { SessionState } from "@/types/session";
+import { SessionState, Bet } from "@/types/session";
+
+interface SerializedSessionState extends Omit<SessionState, 'startTime' | 'endTime' | 'bets'> {
+  startTime: string;
+  endTime?: string;
+  bets: Array<Omit<Bet, 'timestamp'> & { timestamp: string }>;
+}
 
 const SESSIONS_KEY = "roulette_sessions";
 
 export const saveSession = (session: SessionState): void => {
   const savedSessions = getSavedSessions();
-  savedSessions.push({
+  const serializedSession = {
     ...session,
     startTime: session.startTime.toISOString(),
     endTime: session.endTime?.toISOString(),
@@ -12,8 +18,9 @@ export const saveSession = (session: SessionState): void => {
       ...bet,
       timestamp: bet.timestamp.toISOString(),
     })),
-  });
+  };
 
+  savedSessions.push(serializedSession as unknown as SessionState);
   localStorage.setItem(SESSIONS_KEY, JSON.stringify(savedSessions));
 };
 

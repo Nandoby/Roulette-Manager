@@ -32,10 +32,13 @@ export default function SessionPage() {
       // Calculer le profit/perte de la session
       const profit = finalSession.currentBalance - finalSession.initialCapital;
 
-      // Mettre à jour le bankroll
+      // Créer l'identifiant unique de la session
+      const sessionId = finalSession.startTime.toISOString();
+
+      // Mettre à jour le bankroll avec l'identifiant unique caché à la fin de la description
       recordSessionResult(
         profit,
-        `Session du ${new Date().toLocaleDateString()}`
+        `Session du ${new Date(sessionId).toLocaleDateString()}\u200B[${sessionId}]`
       );
 
       // Sauvegarder la session dans l'historique
@@ -62,8 +65,14 @@ export default function SessionPage() {
       newSession.isActive = false;
       newSession.endTime = new Date();
 
-      // Mettre à jour le bankroll et sauvegarder la session si elle se termine
-      recordSessionResult(profitLoss, `Session du ${new Date().toLocaleDateString()}`);
+      // Créer l'identifiant unique de la session
+      const sessionId = session.startTime.toISOString();
+
+      // Mettre à jour le bankroll avec l'identifiant unique caché à la fin de la description
+      recordSessionResult(
+        profitLoss,
+        `Session du ${new Date(sessionId).toLocaleDateString()}\u200B[${sessionId}]`
+      );
       saveSession(newSession);
     }
 

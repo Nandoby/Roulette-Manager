@@ -69,6 +69,12 @@ export default function BankrollPage() {
     }
   };
 
+  const formatDescription = (description: string | undefined) => {
+    if (!description) return '-';
+    // Retourner la partie avant le caractère invisible
+    return description.split('\u200B')[0];
+  };
+
   return (
     <Container>
       <Box sx={{ mt: 4 }}>
@@ -148,7 +154,7 @@ export default function BankrollPage() {
                         <Typography>
                           {getTransactionLabel(transaction.type)}
                           {transaction.description &&
-                            ` - ${transaction.description}`}
+                            ` - ${formatDescription(transaction.description)}`}
                         </Typography>
                         <Typography
                           sx={{

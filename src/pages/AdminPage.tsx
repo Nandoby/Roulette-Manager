@@ -88,7 +88,6 @@ export default function AdminPage() {
   const handleDeleteSession = (sessionIndex: number) => {
     if (window.confirm('Êtes-vous sûr de vouloir supprimer cette session ?')) {
       const sessionToDelete = sessions[sessionIndex];
-      const sessionProfit = sessionToDelete.currentBalance - sessionToDelete.initialCapital;
       
       // 1. Supprimer la session
       const updatedSessions = sessions.filter((_, index) => index !== sessionIndex).map(session => ({
@@ -105,23 +104,31 @@ export default function AdminPage() {
 
       // 2. Mettre à jour la bankroll
       const currentBankrollState = getBankrollState();
-      const sessionTimestamp = new Date(sessionToDelete.startTime).getTime();
-      const profitAmount = Math.abs(sessionProfit);
       
-      const updatedHistory = currentBankrollState.history.filter((transaction: BankrollTransaction) => {
-        if (transaction.type !== 'session_win' && transaction.type !== 'session_loss') {
-          return true;
-        }
+      // Créer l'identifiant unique de la session basé sur sa date exacte
+      const sessionId = new Date(sessionToDelete.startTime).toISOString();
+      
+      // Trouver la transaction correspondante pour obtenir le montant exact
+      const sessionTransaction = currentBankrollState.history.find(
+        (transaction: BankrollTransaction) => 
+          (transaction.type === 'session_win' || transaction.type === 'session_loss') &&
+          transaction.description?.includes(`[${sessionId}]`)
+      );
 
-        const transactionTimestamp = new Date(transaction.date).getTime();
-        const timeDiff = Math.abs(transactionTimestamp - sessionTimestamp);
-        const isNearbyTime = timeDiff < 5000; // 5 secondes de marge
-        const isSameAmount = transaction.amount === profitAmount;
+      // Filtrer les transactions en excluant celle qui correspond exactement à cette session
+      const updatedHistory = currentBankrollState.history.filter(
+        (transaction: BankrollTransaction) => 
+          !(
+            (transaction.type === 'session_win' || transaction.type === 'session_loss') &&
+            transaction.description?.includes(`[${sessionId}]`)
+          )
+      );
 
-        return !(isNearbyTime && isSameAmount);
-      });
+      // Calculer le nouveau solde en annulant la transaction
+      const transactionAmount = sessionTransaction?.amount || 0;
+      const adjustmentAmount = sessionTransaction?.type === 'session_win' ? -transactionAmount : transactionAmount;
+      const newBalance = currentBankrollState.totalBalance + adjustmentAmount;
 
-      const newBalance = currentBankrollState.totalBalance - sessionProfit;
       const newBankrollState = {
         totalBalance: newBalance,
         lastUpdate: new Date().toISOString(),
@@ -147,8 +154,20 @@ export default function AdminPage() {
 
   const handleSaveTransactionEdit = () => {
     if (editingTransaction) {
+      // Préserver l'identifiant technique s'il existe
+      const currentDescription = editingTransaction.description || '';
+      const [visiblePart, technicalPart] = currentDescription.split('\u200B');
+      const newDescription = technicalPart 
+        ? `${editingTransaction.description}\u200B${technicalPart}`
+        : editingTransaction.description;
+
+      const updatedTransaction = {
+        ...editingTransaction,
+        description: newDescription
+      };
+
       const updatedHistory = bankrollState.history.map((transaction) =>
-        transaction.date === editingTransaction.date ? editingTransaction : transaction
+        transaction.date === editingTransaction.date ? updatedTransaction : transaction
       );
       
       // Recalculer le solde total
@@ -179,6 +198,12 @@ export default function AdminPage() {
       style: 'currency',
       currency: 'EUR',
     }).format(amount);
+  };
+
+  const formatDescription = (description: string | undefined) => {
+    if (!description) return '-';
+    // Retourner la partie avant le caractère invisible
+    return description.split('\u200B')[0];
   };
 
   return (
@@ -218,10 +243,18 @@ export default function AdminPage() {
                   <TableCell>{formatAmount(session.stopLoss)}</TableCell>
                   <TableCell>{formatAmount(session.stopWin)}</TableCell>
                   <TableCell>
-                    <IconButton onClick={() => handleEditSession(session)}>
+                    <IconButton 
+                      onClick={() => handleEditSession(session)}
+                      color="primary"
+                      sx={{ '&:hover': { color: 'primary.dark' } }}
+                    >
                       <EditIcon />
                     </IconButton>
-                    <IconButton onClick={() => handleDeleteSession(index)}>
+                    <IconButton 
+                      onClick={() => handleDeleteSession(index)}
+                      color="error"
+                      sx={{ '&:hover': { color: 'error.dark' } }}
+                    >
                       <DeleteIcon />
                     </IconButton>
                   </TableCell>
@@ -250,9 +283,13 @@ export default function AdminPage() {
                   <TableCell>{formatDate(transaction.date)}</TableCell>
                   <TableCell>{transaction.type}</TableCell>
                   <TableCell>{formatAmount(transaction.amount)}</TableCell>
-                  <TableCell>{transaction.description || '-'}</TableCell>
+                  <TableCell>{formatDescription(transaction.description)}</TableCell>
                   <TableCell>
-                    <IconButton onClick={() => handleEditTransaction(transaction)}>
+                    <IconButton 
+                      onClick={() => handleEditTransaction(transaction)}
+                      color="primary"
+                      sx={{ '&:hover': { color: 'primary.dark' } }}
+                    >
                       <EditIcon />
                     </IconButton>
                   </TableCell>
@@ -332,7 +369,7 @@ export default function AdminPage() {
               />
               <TextField
                 label="Description"
-                value={editingTransaction.description || ''}
+                value={formatDescription(editingTransaction.description) || ''}
                 onChange={(e) =>
                   setEditingTransaction({
                     ...editingTransaction,
