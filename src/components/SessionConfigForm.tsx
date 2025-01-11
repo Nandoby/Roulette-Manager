@@ -112,7 +112,7 @@ export default function SessionConfigForm({
           required
           fullWidth
           InputProps={{
-            inputProps: { min: 0, step: 0.5 },
+            inputProps: { min: 0, step: 0.01 },
           }}
           helperText="Arrêt automatique si les gains atteignent ce montant"
         />
