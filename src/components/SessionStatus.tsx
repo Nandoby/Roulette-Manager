@@ -18,7 +18,11 @@ export default function SessionStatus({ session }: SessionStatusProps) {
   }, session.initialCapital);
 
   const profitLoss = currentBalance - session.initialCapital;
-  const profitPercentage = (profitLoss / session.initialCapital) * 100;
+  
+  // Calcul du pourcentage par rapport au Stop Win/Loss
+  const profitPercentage = profitLoss >= 0 
+    ? (profitLoss / session.stopWin) * 100 
+    : (profitLoss / session.stopLoss) * 100;
   
   // Calcul de la progression vers les limites
   const lossProgress = Math.max(0, Math.min(100, 
@@ -51,31 +55,57 @@ export default function SessionStatus({ session }: SessionStatusProps) {
           color={profitLoss >= 0 ? 'success.main' : 'error.main'}
         >
           {profitLoss >= 0 ? 'Gain' : 'Perte'}: {Math.abs(profitLoss).toFixed(2)} € 
-          ({profitPercentage.toFixed(1)}%)
+          ({Math.abs(profitPercentage).toFixed(1)}%)
         </Typography>
       </Box>
 
       <Box sx={{ mb: 2 }}>
-        <Typography variant="body2" gutterBottom>
-          Progression vers Stop Loss ({session.stopLoss} €)
-        </Typography>
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
+          <Typography variant="body2">
+            Stop Loss ({session.stopLoss} €)
+          </Typography>
+          <Typography variant="body2" color="error.main">
+            {lossProgress.toFixed(1)}%
+          </Typography>
+        </Box>
         <LinearProgress
           variant="determinate"
           value={lossProgress}
           color="error"
-          sx={{ height: 10, borderRadius: 5 }}
+          sx={{
+            height: 12,
+            borderRadius: 6,
+            backgroundColor: 'rgba(211, 47, 47, 0.3)',
+            '& .MuiLinearProgress-bar': {
+              borderRadius: 6,
+              backgroundColor: 'rgba(211, 47, 47, 0.7)',
+            }
+          }}
         />
       </Box>
 
       <Box>
-        <Typography variant="body2" gutterBottom>
-          Progression vers Stop Win ({session.stopWin} €)
-        </Typography>
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
+          <Typography variant="body2">
+            Stop Win ({session.stopWin} €)
+          </Typography>
+          <Typography variant="body2" color="success.main">
+            {winProgress.toFixed(1)}%
+          </Typography>
+        </Box>
         <LinearProgress
           variant="determinate"
           value={winProgress}
           color="success"
-          sx={{ height: 10, borderRadius: 5 }}
+          sx={{
+            height: 12,
+            borderRadius: 6,
+            backgroundColor: 'rgba(46, 125, 50, 0.3)',
+            '& .MuiLinearProgress-bar': {
+              borderRadius: 6,
+              backgroundColor: 'rgba(46, 125, 50, 0.7)',
+            }
+          }}
         />
       </Box>
     </Paper>
